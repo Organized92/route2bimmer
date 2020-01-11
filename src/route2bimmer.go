@@ -28,10 +28,12 @@ func main() {
 			fmt.Println("Longitute: " + strconv.FormatFloat(gpxContents.Waypoints[i].Longitute, 'f', -1, 64))
 		}
 
-		// Calculate the distance of the tracks, if provided
+		// Calculate the distance and duration of the tracks, if provided
 		for i := 0; i < len(gpxContents.Tracks); i++ {
 			var totalDistance = calcTotalTrackDistance(gpxContents.Tracks[i]) / 1000
-			fmt.Println("Distance of track \"" + gpxContents.Tracks[i].Name + "\": " + strconv.FormatFloat(totalDistance, 'f', 3, 64) + "km")
+			var totalDurationMin = calcTotalTrackDuration(gpxContents.Tracks[i]) / 60
+			fmt.Println("Distance of track \"" + gpxContents.Tracks[i].Name + "\": " + strconv.FormatFloat(totalDistance, 'f', 3, 64) + " km")
+			fmt.Println("Duration of track \"" + gpxContents.Tracks[i].Name + "\": " + strconv.FormatInt(totalDurationMin, 10) + " min")
 		}
 	} else {
 		fmt.Println(err)
