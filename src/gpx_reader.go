@@ -25,7 +25,7 @@ type Metadata struct {
 type Waypoint struct {
 	XMLName     xml.Name `xml:"wpt"`
 	Latitude    float64  `xml:"lat,attr"`
-	Longitute   float64  `xml:"lon,attr"`
+	Longitude   float64  `xml:"lon,attr"`
 	Name        string   `xml:"name"`
 	Description string   `xml:"desc"`
 }

@@ -40,7 +40,7 @@ func calcTotalTrackDuration(track Track) int64 {
 
 }
 
-// calcTotalTrackDistance calculates the distance of a GPX track, also considering the elevation provided in the GPX file.
+// calcTotalTrackDistance calculates the distance of a GPX track in meters, also considering the elevation provided in the GPX file.
 func calcTotalTrackDistance(track Track) float64 {
 
 	var totalDistance float64
