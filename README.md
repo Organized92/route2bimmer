@@ -1,2 +1,2 @@
 # route2bimmer
-Konvertiert GPX-Waypoints zu BMW-Routen
+Konvertiert GPX-Waypoints zu BMW-Routen.
