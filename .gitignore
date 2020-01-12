@@ -15,3 +15,5 @@
 # End of https://www.gitignore.io/api/visualstudiocode
 .vscode/launch.json
 *.gpx
+*.zip
+*.exe
