@@ -7,6 +7,7 @@ import (
 	"compress/gzip"
 	"encoding/xml"
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -22,6 +23,7 @@ type fileStructure struct {
 
 func main() {
 
+	var directio bool
 	var err error
 	var gpxContents structs.GPX
 	var xmlNav, xmlNavigation, thumbnail []byte
@@ -29,12 +31,26 @@ func main() {
 
 	// command line arguments
 	inputPtr := flag.String("input", "", "path to input file")
-	outputPtr := flag.String("output", "route.zip", "path to output zip file")
-	directIoPtr := flag.Bool("directio", false, "input via stdin, output via stdout")
+	outputPtr := flag.String("output", "", "path to output zip file")
 	flag.Parse()
 
 	// Check if we have to read the input data from stdin or from a file
-	if *directIoPtr == true {
+	// Also we do some argument checks
+	if *inputPtr == "" && *outputPtr == "" {
+		directio = true
+	} else {
+		if *inputPtr == "" && *outputPtr != "" {
+			fmt.Println("Please specify the input GPX file. Use -h for more information.")
+			return
+		}
+		if *inputPtr != "" && *outputPtr == "" {
+			fmt.Println("Please specify the output ZIP file. Use -h for more information.")
+			return
+		}
+		directio = false
+	}
+
+	if directio == true {
 		// Read from stdin
 		gpxContents, err = ReadGPXFromStdin()
 	} else {
@@ -94,7 +110,7 @@ func main() {
 	var bufZip = filesToZipBuffer(filesZip)
 
 	// Check if we have to write the zip file to stdout or into a file
-	if *directIoPtr == true {
+	if directio == true {
 
 		// write to stdout
 		bufZip.WriteTo(os.Stdout)

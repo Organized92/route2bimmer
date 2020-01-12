@@ -12,9 +12,9 @@ route2bimmer requires at minimum a GPX file containing waypoint data. The GPX fi
 route2bimmer -input=path-to-input.gpx -output=path-to-output-route.zip
 ```
 
-If you prefer, you can also use stdin and stdout. Make sure to use the -directio flag.
+If you prefer, you can also use stdin and stdout.
 ``` bash
-route2bimmer -directio < path-to-input.gpx > path-to-output-route.zip
+route2bimmer < path-to-input.gpx > path-to-output-route.zip
 ```
 
 You can also have a look at the built in usage help:
