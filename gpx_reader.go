@@ -7,9 +7,26 @@ import (
 	"route2bimmer/structs"
 )
 
-// ReadGPXFile reads the contents of the supplied filepath and returns a structure of type GPX in case of success
-func ReadGPXFile(inputPath *string) (structs.GPX, error) {
+// ReadGPXFromStdin read the contents of the GPX file from stdin and returns a structure of type GPX in case of success
+func ReadGPXFromStdin() (structs.GPX, error) {
+	// Declare return value
+	var gpxContents structs.GPX
 
+	// Read data from stdin
+	var data, err = ioutil.ReadAll(os.Stdin)
+	if err != nil {
+		return gpxContents, err
+	}
+
+	// Unmarshal the byteArray which contains the GPX file into the gpxContents
+	xml.Unmarshal(data, &gpxContents)
+
+	// Return the contents of the GPX file
+	return gpxContents, nil
+}
+
+// ReadGPXFromFile reads the contents of the supplied filepath and returns a structure of type GPX in case of success
+func ReadGPXFromFile(inputPath *string) (structs.GPX, error) {
 	// Declare return value
 	var gpxContents structs.GPX
 

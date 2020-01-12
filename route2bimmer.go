@@ -9,6 +9,7 @@ import (
 	"flag"
 	"io/ioutil"
 	"log"
+	"os"
 	"route2bimmer/structs"
 	"strconv"
 )
@@ -29,67 +30,83 @@ func main() {
 	// command line arguments
 	inputPtr := flag.String("input", "", "path to input file")
 	outputPtr := flag.String("output", "route.zip", "path to output zip file")
+	directIoPtr := flag.Bool("directio", false, "input via stdin, output via stdout")
 	flag.Parse()
 
-	// read GPX file into gpxContents
-	gpxContents, err = ReadGPXFile(inputPtr)
+	// Check if we have to read the input data from stdin or from a file
+	if *directIoPtr == true {
+		// Read from stdin
+		gpxContents, err = ReadGPXFromStdin()
+	} else {
+		// Read from file
+		gpxContents, err = ReadGPXFromFile(inputPtr)
+	}
+
+	// Generate contents for XML file in folder "Nav" and "Navigation"
+	var routeNav = MapGPXtoRouteNav(gpxContents, routeID)
+	var routeNavigation = MapGPXtoRouteNavigation(gpxContents, routeID)
+
+	// Marshal contents into XML text for both files
+	xmlNav, err = xml.MarshalIndent(routeNav, "  ", "  ")
 	if err != nil {
 		log.Fatalln(err)
+		return
+	}
+
+	xmlNavigation, err = xml.MarshalIndent(routeNavigation, "  ", "  ")
+	if err != nil {
+		log.Fatalln(err)
+		return
+	}
+
+	// Read image file data
+	thumbnail, err = ioutil.ReadFile("routepicture.jpg")
+	if err != nil {
+		log.Fatalln(err)
+		return
+	}
+
+	// File structure for tar archive
+	var filesNav = []fileStructure{
+		{strconv.FormatInt(routeID, 10) + ".xml", xmlNav, 0700},
+		{"routepicture_" + strconv.FormatInt(routeID, 10) + ".jpg", thumbnail, 0700},
+	}
+	var filesNavigation = []fileStructure{
+		{strconv.FormatInt(routeID, 10) + ".xml", xmlNavigation, 0700},
+		{"routepicture_" + strconv.FormatInt(routeID, 10) + ".jpg", thumbnail, 0700},
+	}
+
+	// Create tarballs
+	var bufNav = filesToTarBuffer(filesNav)
+	var bufNavigation = filesToTarBuffer(filesNavigation)
+
+	// compress the tarballs using GZIP
+	var bufNavGzip = compressGzip(bufNav)
+	var bufNavigationGzip = compressGzip(bufNavigation)
+
+	// File structure for zip archive
+	var filesZip = []fileStructure{
+		{"BMWData/Nav/" + gpxContents.Metadata.Name + ".tar.gz", bufNavGzip.Bytes(), 0700},
+		{"BMWData/Navigation/Routes/" + gpxContents.Metadata.Name + ".tar.gz", bufNavigationGzip.Bytes(), 0700},
+	}
+
+	// Create the ZIP file containing the folder structure and the tar.gz-files
+	var bufZip = filesToZipBuffer(filesZip)
+
+	// Check if we have to write the zip file to stdout or into a file
+	if *directIoPtr == true {
+
+		// write to stdout
+		bufZip.WriteTo(os.Stdout)
+
 	} else {
 
-		// Generate contents for XML file in folder "Nav" and "Navigation"
-		var routeNav = MapGPXtoRouteNav(gpxContents, routeID)
-		var routeNavigation = MapGPXtoRouteNavigation(gpxContents, routeID)
-
-		// Marshal contents into XML text for both files
-		xmlNav, err = xml.MarshalIndent(routeNav, "  ", "  ")
-		if err != nil {
-			log.Fatalln(err)
-		}
-
-		xmlNavigation, err = xml.MarshalIndent(routeNavigation, "  ", "  ")
-		if err != nil {
-			log.Fatalln(err)
-		}
-
-		// Read image file data
-		thumbnail, err = ioutil.ReadFile("routepicture.jpg")
-		if err != nil {
-			log.Fatalln(err)
-		}
-
-		// File structure for tar archive
-		var filesNav = []fileStructure{
-			{strconv.FormatInt(routeID, 10) + ".xml", xmlNav, 0700},
-			{"routepicture_" + strconv.FormatInt(routeID, 10) + ".jpg", thumbnail, 0700},
-		}
-		var filesNavigation = []fileStructure{
-			{strconv.FormatInt(routeID, 10) + ".xml", xmlNavigation, 0700},
-			{"routepicture_" + strconv.FormatInt(routeID, 10) + ".jpg", thumbnail, 0700},
-		}
-
-		// Create tarballs
-		var bufNav = filesToTarBuffer(filesNav)
-		var bufNavigation = filesToTarBuffer(filesNavigation)
-
-		// compress the tarballs using GZIP
-		var bufNavGzip = compressGzip(bufNav)
-		var bufNavigationGzip = compressGzip(bufNavigation)
-
-		// File structure for zip archive
-		var filesZip = []fileStructure{
-			{"BMWData/Nav/" + gpxContents.Metadata.Name + ".tar.gz", bufNavGzip.Bytes(), 0700},
-			{"BMWData/Navigation/Routes/" + gpxContents.Metadata.Name + ".tar.gz", bufNavigationGzip.Bytes(), 0700},
-		}
-
-		// Create the ZIP file containing the folder structure and the tar.gz-files
-		var bufZip = filesToZipBuffer(filesZip)
-
-		// Write the zip file onto the harddrive
+		// write the zip file onto the harddrive
 		err = ioutil.WriteFile(*outputPtr, bufZip.Bytes(), 0644)
 		if err != nil {
 			log.Fatalln(err)
 		}
+
 	}
 }
 
