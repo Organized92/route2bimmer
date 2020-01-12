@@ -93,8 +93,8 @@ type TourPicture struct {
 
 type EntryPoint struct {
 	XMLName xml.Name `xml:"EntryPoint"`
-	Route   int      `xml:"Route,attr"`
-	Value   int      `xml:",chardata"`
+	Route   string   `xml:"Route,attr"`
+	Value   string   `xml:",chardata"`
 }
 
 type Route struct {
@@ -110,10 +110,10 @@ type Route struct {
 
 type RouteWayPoint struct {
 	XMLName      xml.Name           `xml:"WayPoint"`
-	ID           int                `xml:"Id"`
+	ID           string             `xml:"Id"`
 	Locations    []WayPointLocation `xml:"Locations>Location"`
 	Importance   string             `xml:"Importance"`
-	Descriptions []TourDescription  `xml:"Descriptions"`
+	Descriptions []TourDescription  `xml:"Descriptions>Description"`
 }
 
 type WayPointLocation struct {
@@ -127,7 +127,7 @@ type WayPointGeoPosition struct {
 	Longitude float64  `xml:"Longitude"`
 }
 
-func mapGPXtoRoute(gpx GPX, routeID int) DeliveryPackage {
+func mapGPXtoRouteNav(gpx GPX, routeID int64) DeliveryPackage {
 
 	var deliveryPackage DeliveryPackage
 
@@ -151,7 +151,7 @@ func mapGPXtoRoute(gpx GPX, routeID int) DeliveryPackage {
 	var guidedTour GuidedTour
 	guidedTour.Access = "WEEKDAYS"
 	guidedTour.Use = "ONFOOT"
-	guidedTour.ID = routeID
+	guidedTour.ID = int(routeID)
 	guidedTour.TripType = 6
 
 	// Country
@@ -197,7 +197,7 @@ func mapGPXtoRoute(gpx GPX, routeID int) DeliveryPackage {
 
 	// Pictures
 	var picture TourPicture
-	picture.Reference = "routepicture_" + strconv.FormatInt(int64(routeID), 10) + ".jpg"
+	picture.Reference = "routepicture_" + strconv.FormatInt(routeID, 10) + ".jpg"
 	picture.Encoding = "JPEG"
 	picture.Width = 252
 	picture.Height = 172
@@ -205,13 +205,13 @@ func mapGPXtoRoute(gpx GPX, routeID int) DeliveryPackage {
 
 	// Entry Point
 	var entryPoint EntryPoint
-	entryPoint.Route = 1
-	entryPoint.Value = 0
+	entryPoint.Route = "1"
+	entryPoint.Value = "0"
 	guidedTour.EntryPoints = append(guidedTour.EntryPoints, entryPoint)
 
 	// Route
 	var route Route
-	route.RouteID = routeID
+	route.RouteID = int(routeID)
 	route.Length = guidedTour.Length
 	route.Duration = guidedTour.Duration
 	route.CostModel = 2
@@ -221,7 +221,130 @@ func mapGPXtoRoute(gpx GPX, routeID int) DeliveryPackage {
 	// Waypoints
 	for index, gpxWaypoint := range gpx.Waypoints {
 		var waypoint RouteWayPoint
-		waypoint.ID = index
+		waypoint.ID = strconv.FormatInt(int64(index), 10)
+		if index == 0 {
+			waypoint.Importance = "always"
+		} else {
+			waypoint.Importance = "optional"
+		}
+
+		// Location
+		var location WayPointLocation
+		location.GeoPosition.Latitude = gpxWaypoint.Latitude
+		location.GeoPosition.Longitude = gpxWaypoint.Longitude
+		waypoint.Locations = append(waypoint.Locations, location)
+
+		// Description
+		var wpDescription TourDescription
+		wpDescription.LanguageCode = "ENG"
+		wpDescription.Text = gpxWaypoint.Name
+		waypoint.Descriptions = append(waypoint.Descriptions, wpDescription)
+
+		route.WayPoint = append(route.WayPoint, waypoint)
+	}
+
+	guidedTour.Routes = append(guidedTour.Routes, route)
+	deliveryPackage.GuidedTour = append(deliveryPackage.GuidedTour, guidedTour)
+
+	return deliveryPackage
+}
+
+
+func mapGPXtoRouteNavigation(gpx GPX, routeID int64) DeliveryPackage {
+
+	var deliveryPackage DeliveryPackage
+
+	// Basic data
+	deliveryPackage.VersionNo = "0.0"
+	deliveryPackage.CreationTime = gpx.Metadata.Time
+	deliveryPackage.MapVersion = "0.0"
+	deliveryPackage.LanguageCodeDesc = "../definitions/language.xml"
+	deliveryPackage.CountryCodeDesc = "../definitions/country.xml"
+	deliveryPackage.SupplierCodeDesc = "../definitions/supplier.xml"
+	deliveryPackage.XY_Type = "WGS84"
+	deliveryPackage.Category_Code_Desc = "../definitions/category.xml"
+	deliveryPackage.CharSet = "UTF-8"
+	deliveryPackage.UpdateType = "BulkUpdate"
+	deliveryPackage.Coverage = "0"
+	deliveryPackage.Category = "4096"
+	deliveryPackage.MajorVersion = "0"
+	deliveryPackage.MinorVersion = "0"
+
+	// Guided Tour
+	var guidedTour GuidedTour
+	guidedTour.Access = "WEEKDAYS"
+	guidedTour.Use = "ONFOOT"
+	guidedTour.ID = int(routeID)
+	guidedTour.TripType = 6
+
+	// Country
+	var country Country
+	country.CountryCode = 3
+	country.Name.LanguageCode = "ENG"
+	country.Name.Value = "Germany"
+	guidedTour.Countries = append(guidedTour.Countries, country)
+
+	// Names
+	var tourName TourName
+	tourName.LanguageCode = "ENG"
+	tourName.Text = gpx.Metadata.Name
+	guidedTour.Names = append(guidedTour.Names, tourName)
+
+	// Length - sum up the distances of all tracks
+	guidedTour.Length.Unit = "km"
+	var totalDistanceKm float64
+	for _, track := range gpx.Tracks {
+		totalDistanceKm = totalDistanceKm + float64(calcTotalTrackDistance(track))/1000
+	}
+	guidedTour.Length.Value = totalDistanceKm
+
+	// Duration - sum up the durations of all tracks
+	guidedTour.Duration.Unit = "h"
+	var totalDurationH float64
+	for _, track := range gpx.Tracks {
+		totalDurationH = totalDurationH + float64(calcTotalTrackDuration(track))/60/60
+	}
+	guidedTour.Duration.Value = totalDurationH
+
+	// Introductions
+	var introduction TourIntroduction
+	introduction.LanguageCode = "ENG"
+	introduction.Text = "-"
+	guidedTour.Introductions = append(guidedTour.Introductions, introduction)
+
+	// Descriptions
+	var description TourDescription
+	description.LanguageCode = "ENG"
+	description.Text = "-"
+	guidedTour.Descriptions = append(guidedTour.Descriptions, description)
+
+	// Pictures
+	var picture TourPicture
+	picture.Reference = "routepicture_" + strconv.FormatInt(routeID, 10) + ".jpg"
+	picture.Encoding = "JPEG"
+	picture.Width = 252
+	picture.Height = 172
+	guidedTour.Pictures = append(guidedTour.Pictures, picture)
+
+	// Entry Point
+	var entryPoint EntryPoint
+	entryPoint.Route = "1"
+	entryPoint.Value = "0_0"
+	guidedTour.EntryPoints = append(guidedTour.EntryPoints, entryPoint)
+
+	// Route
+	var route Route
+	route.RouteID = int(routeID)
+	route.Length = guidedTour.Length
+	route.Duration = guidedTour.Duration
+	route.CostModel = 2
+	route.Criteria = 0
+	route.AgoraCString = ""
+
+	// Waypoints
+	for index, gpxWaypoint := range gpx.Waypoints {
+		var waypoint RouteWayPoint
+		waypoint.ID = "0_" + strconv.FormatInt(int64(index), 10)
 		if index == 0 {
 			waypoint.Importance = "always"
 		} else {
