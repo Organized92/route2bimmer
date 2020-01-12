@@ -4,10 +4,10 @@
 ***Please note that route2bimmer is not functional at it's current development state!***
 
 ## Description
-route2bimmer is a command-line tool which converts GPX file into routes that you can load up into your BMW (compatible navigation system required).
+route2bimmer is a command-line tool that converts a GPX file into a route file, which you can load onto your BMW (compatible navigation system required).
 
 ## Usage
-route2bimmer requires at minimum a GPX file including waypoint data. The GPX file may also include track data so that route2bimmer is able to calculate the total length of the route (which will be shown in your navigation system).
+route2bimmer requires at minimum a GPX file containing waypoint data. The GPX file may also include track data so that route2bimmer is able to calculate the total length and driving duration of the route (which will be shown in your navigation system).
 ``` bash
 route2bimmer -input=path-to-input.gpx -output=path-to-output-route.zip
 ```
