@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"os"
 	"route2bimmer/structs"
 	"strconv"
@@ -28,7 +29,7 @@ func main() {
 	var err error
 	var gpxContents structs.GPX
 	var xmlNav, xmlNavigation, thumbnail []byte
-	var routeID int64 = 1234567
+	var routeID int64
 
 	// command line arguments
 	inputPtr := flag.String("input", "", "path to input file")
@@ -58,6 +59,9 @@ func main() {
 		// Read from file
 		gpxContents, err = ReadGPXFromFile(inputPtr)
 	}
+
+	// Generate random ID for this route
+	routeID = generateRandomID()
 
 	// Generate contents for XML file in folder "Nav" and "Navigation"
 	var routeNav = MapGPXtoRouteNav(gpxContents, routeID)
@@ -128,6 +132,11 @@ func main() {
 		}
 
 	}
+}
+
+// generateRandomID generates a random 7-digit number used as an ID for this route
+func generateRandomID() int64 {
+	return int64(rand.Intn(9999999-1000000) + 1000000)
 }
 
 // replaceAgoraCString corrects the xml element "AgoraCString"
