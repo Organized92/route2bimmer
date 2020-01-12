@@ -6,6 +6,7 @@ import (
 	"time"
 )
 
+// meterCoordinates can contain 3 dimensional coordinates in meters
 type meterCoordinates struct {
 	x float64
 	y float64
@@ -15,7 +16,6 @@ type meterCoordinates struct {
 // CalcTotalTrackDuration calculates the amount of time you will need for this route, based on the time data provided in the track data of the GPX file
 // this will return the duration in seconds
 func CalcTotalTrackDuration(track structs.Track) int64 {
-
 	var totalDuration int64
 
 	// We have to loop over the track segments
@@ -26,24 +26,19 @@ func CalcTotalTrackDuration(track structs.Track) int64 {
 		var timeLastPoint, err2 = time.Parse(time.RFC3339, segment.Points[len(segment.Points)-1].Time)
 
 		if err1 == nil && err2 == nil {
-
 			// Calculate the duration
 			var durationNs = timeLastPoint.Sub(timeFirstPoint)
 
 			// Add to total duration
 			totalDuration = totalDuration + int64(math.Round(durationNs.Seconds()))
-
 		}
-
 	}
 
 	return totalDuration
-
 }
 
 // CalcTotalTrackDistance calculates the distance of a GPX track in meters, also considering the elevation provided in the GPX file.
 func CalcTotalTrackDistance(track structs.Track) float64 {
-
 	var totalDistance float64
 	var distance float64
 

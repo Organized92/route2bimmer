@@ -25,19 +25,17 @@ type fileStructure struct {
 
 func main() {
 
-	var directio bool
+	// Variable for error handling
 	var err error
-	var gpxContents structs.GPX
-	var xmlNav, xmlNavigation, thumbnail []byte
-	var routeID int64
 
-	// command line arguments
+	// Parse command line arguments
 	inputPtr := flag.String("input", "", "path to input file")
 	outputPtr := flag.String("output", "", "path to output zip file")
 	flag.Parse()
 
 	// Check if we have to read the input data from stdin or from a file
 	// Also we do some argument checks
+	var directio bool
 	if *inputPtr == "" && *outputPtr == "" {
 		directio = true
 	} else {
@@ -52,6 +50,7 @@ func main() {
 		directio = false
 	}
 
+	var gpxContents structs.GPX
 	if directio == true {
 		// Read from stdin
 		gpxContents, err = ReadGPXFromStdin()
@@ -61,29 +60,21 @@ func main() {
 	}
 
 	// Generate random ID for this route
-	routeID = generateRandomID()
+	var routeID = generateRandomID()
 
 	// Generate contents for XML file in folder "Nav" and "Navigation"
 	var routeNav = MapGPXtoRouteNav(gpxContents, routeID)
 	var routeNavigation = MapGPXtoRouteNavigation(gpxContents, routeID)
 
 	// Marshal contents into XML text for both files
-	xmlNav, err = xml.MarshalIndent(routeNav, "", "  ")
-	if err != nil {
-		log.Fatalln(err)
-		return
-	}
-
-	xmlNavigation, err = xml.MarshalIndent(routeNavigation, "", "  ")
-	if err != nil {
-		log.Fatalln(err)
-		return
-	}
+	var xmlNav = convertRouteToXML(routeNav)
+	var xmlNavigation = convertRouteToXML(routeNavigation)
 
 	// We have to replace one XML tag so that it contains a newline
 	xmlNav = replaceAgoraCString(xmlNav)
 
 	// Read image file data
+	var thumbnail []byte
 	thumbnail, err = ioutil.ReadFile("routepicture.jpg")
 	if err != nil {
 		log.Fatalln(err)
@@ -119,24 +110,29 @@ func main() {
 
 	// Check if we have to write the zip file to stdout or into a file
 	if directio == true {
-
 		// write to stdout
 		bufZip.WriteTo(os.Stdout)
-
 	} else {
-
 		// write the zip file onto the harddrive
 		err = ioutil.WriteFile(*outputPtr, bufZip.Bytes(), 0644)
 		if err != nil {
 			log.Fatalln(err)
 		}
-
 	}
 }
 
 // generateRandomID generates a random 7-digit number used as an ID for this route
 func generateRandomID() int64 {
 	return int64(rand.Intn(9999999-1000000) + 1000000)
+}
+
+// convertRouteToXML converts a xml structure to some real xml Text
+func convertRouteToXML(route structs.DeliveryPackage) []byte {
+	var buffer, err = xml.MarshalIndent(route, "", "  ")
+	if err != nil {
+		log.Fatalln(err)
+	}
+	return buffer
 }
 
 // replaceAgoraCString corrects the xml element "AgoraCString"
