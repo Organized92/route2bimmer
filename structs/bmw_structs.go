@@ -129,7 +129,39 @@ type RouteWayPoint struct {
 // WayPointLocation contains information about where the waypoint is
 type WayPointLocation struct {
 	XMLName     xml.Name            `xml:"Location"`
+	Address     *WayPointAddress    `xml:"Address,omitempty"`
 	GeoPosition WayPointGeoPosition `xml:"GeoPosition"`
+}
+
+// WayPointAddress contains the address details for a waypoint
+type WayPointAddress struct {
+	XMLName       xml.Name      `xml:"Address"`
+	ParsedAddress ParsedAddress `xml:"ParsedAddress"`
+}
+
+// ParsedAddress contains parsed address data
+type ParsedAddress struct {
+	XMLName             xml.Name            `xml:"ParsedAddress"`
+	ParsedStreetAddress ParsedStreetAddress `xml:"ParsedStreetAddress"`
+	ParsedPlace         ParsedPlace         `xml:"ParsedPlace"`
+}
+
+// ParsedStreetAddress contains parsed street address data
+type ParsedStreetAddress struct {
+	XMLName          xml.Name         `xml:"ParsedStreetAddress"`
+	ParsedStreetName ParsedStreetName `xml:"ParsedStreetName"`
+}
+
+// ParsedStreetName contains a parsed street name
+type ParsedStreetName struct {
+	XMLName    xml.Name `xml:"ParsedStreetName"`
+	StreetName string   `xml:"StreetName"`
+}
+
+// ParsedPlace contains a parsed place information
+type ParsedPlace struct {
+	XMLName     xml.Name `xml:"ParsedPlace"`
+	PlaceLevel4 string   `xml:"PlaceLevel4"`
 }
 
 // WayPointGeoPosition contains information about the geographical position

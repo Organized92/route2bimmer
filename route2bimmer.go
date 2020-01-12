@@ -13,6 +13,7 @@ import (
 	"os"
 	"route2bimmer/structs"
 	"strconv"
+	"strings"
 )
 
 type fileStructure struct {
@@ -63,17 +64,20 @@ func main() {
 	var routeNavigation = MapGPXtoRouteNavigation(gpxContents, routeID)
 
 	// Marshal contents into XML text for both files
-	xmlNav, err = xml.MarshalIndent(routeNav, "  ", "  ")
+	xmlNav, err = xml.MarshalIndent(routeNav, "", "  ")
 	if err != nil {
 		log.Fatalln(err)
 		return
 	}
 
-	xmlNavigation, err = xml.MarshalIndent(routeNavigation, "  ", "  ")
+	xmlNavigation, err = xml.MarshalIndent(routeNavigation, "", "  ")
 	if err != nil {
 		log.Fatalln(err)
 		return
 	}
+
+	// We have to replace one XML tag so that it contains a newline
+	xmlNav = replaceAgoraCString(xmlNav)
 
 	// Read image file data
 	thumbnail, err = ioutil.ReadFile("routepicture.jpg")
@@ -124,6 +128,14 @@ func main() {
 		}
 
 	}
+}
+
+// replaceAgoraCString corrects the xml element "AgoraCString"
+func replaceAgoraCString(input []byte) []byte {
+	var s = string(input[:])
+	s = strings.ReplaceAll(s, "<AgoraCString></AgoraCString>", "<AgoraCString>\n          </AgoraCString>")
+	var output = []byte(s)
+	return output
 }
 
 // filesToTarBuffer writes the data contained in "files" in tar format into buffer
