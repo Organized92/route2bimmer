@@ -82,12 +82,6 @@ func MapGPXtoRouteNav(gpx structs.GPX, routeID int64) structs.DeliveryPackage {
 	picture.Height = 172
 	guidedTour.Pictures = append(guidedTour.Pictures, picture)
 
-	// Entry Point
-	var entryPoint structs.EntryPoint
-	entryPoint.Route = "1"
-	entryPoint.Value = "0"
-	guidedTour.EntryPoints = append(guidedTour.EntryPoints, entryPoint)
-
 	// Route
 	var route structs.Route
 	route.RouteID = int(routeID)
@@ -102,7 +96,15 @@ func MapGPXtoRouteNav(gpx structs.GPX, routeID int64) structs.DeliveryPackage {
 		var waypoint structs.RouteWayPoint
 		waypoint.ID = strconv.FormatInt(int64(index), 10)
 		if index == 0 || index == len(gpx.Waypoints)-1 {
+
 			waypoint.Importance = "always"
+
+			// Places with importance = always have to be EntryPoints
+			var entryPoint structs.EntryPoint
+			entryPoint.Route = "1"
+			entryPoint.Value = waypoint.ID
+			guidedTour.EntryPoints = append(guidedTour.EntryPoints, entryPoint)
+
 		} else {
 			waypoint.Importance = "optional"
 		}
@@ -111,6 +113,15 @@ func MapGPXtoRouteNav(gpx structs.GPX, routeID int64) structs.DeliveryPackage {
 		var location structs.WayPointLocation
 		location.GeoPosition.Latitude = gpxWaypoint.Latitude
 		location.GeoPosition.Longitude = gpxWaypoint.Longitude
+
+		// If this is a importance = always waypoint, we have to add address data
+		if waypoint.Importance == "always" {
+			var addr structs.WayPointAddress
+			addr.ParsedAddress.ParsedStreetAddress.ParsedStreetName.StreetName = gpxWaypoint.Name
+			addr.ParsedAddress.ParsedPlace.PlaceLevel4 = gpxWaypoint.Name
+			location.Address = &addr
+		}
+
 		waypoint.Locations = append(waypoint.Locations, location)
 
 		// Description
