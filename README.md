@@ -1,8 +1,6 @@
 # route2bimmer - Create route files for your BMW
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/organized92/route2bimmer) ![GitHub](https://img.shields.io/github/license/organized92/route2bimmer)
 
-***Please note that route2bimmer is not functional at it's current development state!***
-
 ## Description
 route2bimmer is a command-line tool that converts a GPX file into a route file, which you can load onto your BMW (compatible navigation system required).
 
@@ -21,3 +19,8 @@ You can also have a look at the built in usage help:
 ``` bash
 route2bimmer -h
 ```
+
+## Credits
+Thanks to
+* __Matthias Nord__ for intensive testing
+* __lanc0r__ for providing sample route files
