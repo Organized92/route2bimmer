@@ -15,26 +15,31 @@ type meterCoordinates struct {
 
 // CalcTotalTrackDuration calculates the amount of time you will need for this route, based on the time data provided in the track data of the GPX file
 // this will return the duration in seconds
-func CalcTotalTrackDuration(track structs.Track) int64 {
+func CalcTotalTrackDuration(track structs.Track) (int64, error) {
 	var totalDuration int64
+	var err error
 
 	// We have to loop over the track segments
 	for _, segment := range track.Segments {
 
 		// We need the first and the last track point, the ones in between are irrelevant
-		var timeFirstPoint, err1 = time.Parse(time.RFC3339, segment.Points[0].Time)
-		var timeLastPoint, err2 = time.Parse(time.RFC3339, segment.Points[len(segment.Points)-1].Time)
-
-		if err1 == nil && err2 == nil {
-			// Calculate the duration
-			var durationNs = timeLastPoint.Sub(timeFirstPoint)
-
-			// Add to total duration
-			totalDuration = totalDuration + int64(math.Round(durationNs.Seconds()))
+		timeFirstPoint, err := time.Parse(time.RFC3339, segment.Points[0].Time)
+		if err != nil {
+			return totalDuration, err
 		}
+		timeLastPoint, err := time.Parse(time.RFC3339, segment.Points[len(segment.Points)-1].Time)
+		if err != nil {
+			return totalDuration, err
+		}
+
+		// Calculate the duration
+		var durationNs = timeLastPoint.Sub(timeFirstPoint)
+
+		// Add to total duration
+		totalDuration = totalDuration + int64(math.Round(durationNs.Seconds()))
 	}
 
-	return totalDuration
+	return totalDuration, err
 }
 
 // CalcTotalTrackDistance calculates the distance of a GPX track in meters, also considering the elevation provided in the GPX file.

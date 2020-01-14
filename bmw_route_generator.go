@@ -32,7 +32,7 @@ const conRouteCostModel int = 2
 const conRouteCriteria int = 0
 
 // MapGPXtoRouteNav converts the GPX contents to a BMW compatible XML file for folder "Nav"
-func MapGPXtoRouteNav(gpx structs.GPX, routeID int64) structs.DeliveryPackage {
+func MapGPXtoRouteNav(gpx structs.GPX, routeID int64) (structs.DeliveryPackage, error) {
 
 	var deliveryPackage structs.DeliveryPackage
 
@@ -84,7 +84,11 @@ func MapGPXtoRouteNav(gpx structs.GPX, routeID int64) structs.DeliveryPackage {
 	guidedTour.Duration.Unit = conUnitDuration
 	var totalDurationH float64
 	for _, track := range gpx.Tracks {
-		totalDurationH = totalDurationH + float64(CalcTotalTrackDuration(track))/60/60
+		partialDurationH, err := CalcTotalTrackDuration(track)
+		if err != nil {
+			return deliveryPackage, err
+		}
+		totalDurationH = totalDurationH + float64(partialDurationH)/3600
 	}
 	guidedTour.Duration.Value = totalDurationH
 
@@ -162,11 +166,12 @@ func MapGPXtoRouteNav(gpx structs.GPX, routeID int64) structs.DeliveryPackage {
 	guidedTour.Routes = append(guidedTour.Routes, route)
 	deliveryPackage.GuidedTour = append(deliveryPackage.GuidedTour, guidedTour)
 
-	return deliveryPackage
+	var err error
+	return deliveryPackage, err
 }
 
 // MapGPXtoRouteNavigation converts the GPX contents to a BMW compatible XML file for folder "Navigation"
-func MapGPXtoRouteNavigation(gpx structs.GPX, routeID int64) structs.DeliveryPackage {
+func MapGPXtoRouteNavigation(gpx structs.GPX, routeID int64) (structs.DeliveryPackage, error) {
 
 	var deliveryPackage structs.DeliveryPackage
 
@@ -218,7 +223,11 @@ func MapGPXtoRouteNavigation(gpx structs.GPX, routeID int64) structs.DeliveryPac
 	guidedTour.Duration.Unit = conUnitDuration
 	var totalDurationH float64
 	for _, track := range gpx.Tracks {
-		totalDurationH = totalDurationH + float64(CalcTotalTrackDuration(track))/60/60
+		partialDurationH, err := CalcTotalTrackDuration(track)
+		if err != nil {
+			return deliveryPackage, err
+		}
+		totalDurationH = totalDurationH + float64(partialDurationH)/3600
 	}
 	guidedTour.Duration.Value = totalDurationH
 
@@ -296,5 +305,6 @@ func MapGPXtoRouteNavigation(gpx structs.GPX, routeID int64) structs.DeliveryPac
 	guidedTour.Routes = append(guidedTour.Routes, route)
 	deliveryPackage.GuidedTour = append(deliveryPackage.GuidedTour, guidedTour)
 
-	return deliveryPackage
+	var err error
+	return deliveryPackage, err
 }

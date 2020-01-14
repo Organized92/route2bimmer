@@ -13,38 +13,40 @@ func ReadGPXFromStdin() (structs.GPX, error) {
 	var gpxContents structs.GPX
 
 	// Read data from stdin
-	var data, err = ioutil.ReadAll(os.Stdin)
+	data, err := ioutil.ReadAll(os.Stdin)
 	if err != nil {
 		return gpxContents, err
 	}
 
 	// Unmarshal the byteArray which contains the GPX file into the gpxContents
-	xml.Unmarshal(data, &gpxContents)
+	err = xml.Unmarshal(data, &gpxContents)
 
 	// Return the contents of the GPX file
-	return gpxContents, nil
+	return gpxContents, err
 }
 
 // ReadGPXFromFile reads the contents of the supplied filepath and returns a structure of type GPX in case of success
 func ReadGPXFromFile(inputPath *string) (structs.GPX, error) {
 	// Declare return value
 	var gpxContents structs.GPX
+	var err error
 
 	// Open the GPX file
 	gpxFile, err := os.Open(*inputPath)
 	if err != nil {
 		return gpxContents, err
 	}
-
-	// Defer the closing of the GPX file so we can parse it
 	defer gpxFile.Close()
 
 	// Read the GPX file as a byte array
-	byteValue, _ := ioutil.ReadAll(gpxFile)
+	byteValue, err := ioutil.ReadAll(gpxFile)
+	if err != nil {
+		return gpxContents, err
+	}
 
 	// Unmarshal the byteArray which contains the GPX file into the gpxContents
-	xml.Unmarshal(byteValue, &gpxContents)
+	err = xml.Unmarshal(byteValue, &gpxContents)
 
 	// Return the contents of the GPX file
-	return gpxContents, nil
+	return gpxContents, err
 }

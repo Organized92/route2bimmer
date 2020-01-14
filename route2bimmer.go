@@ -17,7 +17,7 @@ import (
 	"strings"
 )
 
-type fileStructure struct {
+type fileData struct {
 	filename string
 	content  []byte
 	mode     int64
@@ -54,21 +54,47 @@ func main() {
 	if directio == true {
 		// Read from stdin
 		gpxContents, err = ReadGPXFromStdin()
+		if err != nil {
+			log.Println("Could not read fom STDIN!")
+			log.Fatalln(err)
+		}
 	} else {
 		// Read from file
 		gpxContents, err = ReadGPXFromFile(inputPtr)
+		if err != nil {
+			log.Println("Could not read the GPX file!")
+			log.Fatalln(err)
+		}
 	}
 
 	// Generate random ID for this route
-	var routeID = generateRandomID()
+	routeID := generateRandomID()
 
 	// Generate contents for XML file in folder "Nav" and "Navigation"
-	var routeNav = MapGPXtoRouteNav(gpxContents, routeID)
-	var routeNavigation = MapGPXtoRouteNavigation(gpxContents, routeID)
+	routeNav, err := MapGPXtoRouteNav(gpxContents, routeID)
+	if err != nil {
+		log.Println("BMW route XML could not be generated (Nav)!")
+		log.Fatalln(err)
+	}
+
+	routeNavigation, err := MapGPXtoRouteNavigation(gpxContents, routeID)
+	if err != nil {
+		log.Println("BMW route XML could not be generated (Nav)!")
+		log.Fatalln(err)
+	}
 
 	// Marshal contents into XML text for both files
-	var xmlNav = convertRouteToXML(routeNav)
-	var xmlNavigation = convertRouteToXML(routeNavigation)
+	xmlNav, err := convertRouteToXML(routeNav)
+	if err != nil {
+		log.Println("GPX contents could not be converted to BMW route format (Nav)!")
+		log.Fatalln(err)
+	}
+
+	xmlNavigation, err := convertRouteToXML(routeNavigation)
+	if err != nil {
+		log.Println("GPX contents could not be converted to BMW route format (Navigation)!")
+		log.Fatalln(err)
+	}
 
 	// We have to replace one XML tag so that it contains a newline
 	xmlNav = replaceAgoraCString(xmlNav)
@@ -77,36 +103,58 @@ func main() {
 	var thumbnail []byte
 	thumbnail, err = ioutil.ReadFile("routepicture.jpg")
 	if err != nil {
+		log.Println("Default route picture could not be loaded!")
 		log.Fatalln(err)
-		return
 	}
 
 	// File structure for tar archive
-	var filesNav = []fileStructure{
+	var filesNav = []fileData{
 		{strconv.FormatInt(routeID, 10) + ".xml", xmlNav, 0700},
 		{"routepicture_" + strconv.FormatInt(routeID, 10) + ".jpg", thumbnail, 0700},
 	}
-	var filesNavigation = []fileStructure{
+	var filesNavigation = []fileData{
 		{strconv.FormatInt(routeID, 10) + ".xml", xmlNavigation, 0700},
 		{"routepicture_" + strconv.FormatInt(routeID, 10) + ".jpg", thumbnail, 0700},
 	}
 
 	// Create tarballs
-	var bufNav = filesToTarBuffer(filesNav)
-	var bufNavigation = filesToTarBuffer(filesNavigation)
+	bufNav, err := filesToTarBuffer(filesNav)
+	if err != nil {
+		log.Println("Could not create the tarball file (Nav)!")
+		log.Fatalln(err)
+	}
+
+	bufNavigation, err := filesToTarBuffer(filesNavigation)
+	if err != nil {
+		log.Println("Could not create the tarball file (Navigation)!")
+		log.Fatalln(err)
+	}
 
 	// compress the tarballs using GZIP
-	var bufNavGzip = compressGzip(bufNav)
-	var bufNavigationGzip = compressGzip(bufNavigation)
+	bufNavGzip, err := compressGzip(bufNav)
+	if err != nil {
+		log.Println("Could not gzip the tarball file (Nav)!")
+		log.Fatalln(err)
+	}
+
+	bufNavigationGzip, err := compressGzip(bufNavigation)
+	if err != nil {
+		log.Println("Could not gzip the tarball file (Navigation)!")
+		log.Fatalln(err)
+	}
 
 	// File structure for zip archive
-	var filesZip = []fileStructure{
+	var filesZip = []fileData{
 		{"BMWData/Nav/" + gpxContents.Metadata.Name + ".tar.gz", bufNavGzip.Bytes(), 0700},
 		{"BMWData/Navigation/Routes/" + gpxContents.Metadata.Name + ".tar.gz", bufNavigationGzip.Bytes(), 0700},
 	}
 
 	// Create the ZIP file containing the folder structure and the tar.gz-files
-	var bufZip = filesToZipBuffer(filesZip)
+	bufZip, err := filesToZipBuffer(filesZip)
+	if err != nil {
+		log.Println("Could not create the zip file!")
+		log.Fatalln(err)
+	}
 
 	// Check if we have to write the zip file to stdout or into a file
 	if directio == true {
@@ -116,6 +164,7 @@ func main() {
 		// write the zip file onto the harddrive
 		err = ioutil.WriteFile(*outputPtr, bufZip.Bytes(), 0644)
 		if err != nil {
+			log.Println("Could not write the zip file to the harddrive!")
 			log.Fatalln(err)
 		}
 	}
@@ -127,12 +176,9 @@ func generateRandomID() int64 {
 }
 
 // convertRouteToXML converts a xml structure to some real xml Text
-func convertRouteToXML(route structs.DeliveryPackage) []byte {
-	var buffer, err = xml.MarshalIndent(route, "", "  ")
-	if err != nil {
-		log.Fatalln(err)
-	}
-	return buffer
+func convertRouteToXML(route structs.DeliveryPackage) ([]byte, error) {
+	buffer, err := xml.MarshalIndent(route, "", "  ")
+	return buffer, err
 }
 
 // replaceAgoraCString corrects the xml element "AgoraCString"
@@ -144,7 +190,7 @@ func replaceAgoraCString(input []byte) []byte {
 }
 
 // filesToTarBuffer writes the data contained in "files" in tar format into buffer
-func filesToTarBuffer(files []fileStructure) bytes.Buffer {
+func filesToTarBuffer(files []fileData) (bytes.Buffer, error) {
 	var buffer bytes.Buffer
 
 	// Create tar writer
@@ -159,43 +205,41 @@ func filesToTarBuffer(files []fileStructure) bytes.Buffer {
 			Size: int64(len(file.content)),
 		}
 		if err := tarWriter.WriteHeader(fileHdr); err != nil {
-			log.Fatalln(err)
+			return buffer, err
 		}
 		// Write file data
 		if _, err := tarWriter.Write(file.content); err != nil {
-			log.Fatalln(err)
+			return buffer, err
 		}
 	}
 
 	// After all files have been written, close the tar
-	if err := tarWriter.Close(); err != nil {
-		log.Fatalln(err)
-	}
-
-	return buffer
+	err := tarWriter.Close()
+	return buffer, err
 }
 
 // compressGzip compresses the input data using gzip
-func compressGzip(data bytes.Buffer) bytes.Buffer {
+func compressGzip(data bytes.Buffer) (bytes.Buffer, error) {
 	var buffer bytes.Buffer
 
 	// Create the gzip writer
 	gzipWriter := gzip.NewWriter(&buffer)
 
 	// Write data
-	if _, err := gzipWriter.Write(data.Bytes()); err != nil {
-		log.Fatalln(err)
+	_, err := gzipWriter.Write(data.Bytes())
+	if err != nil {
+		return buffer, err
 	}
 
 	// Close the writer
-	gzipWriter.Close()
+	err = gzipWriter.Close()
 
 	// Return compressed data
-	return buffer
+	return buffer, err
 }
 
 // filesToZipBuffer writes the data contained in "files" in zip format into buffer
-func filesToZipBuffer(files []fileStructure) bytes.Buffer {
+func filesToZipBuffer(files []fileData) (bytes.Buffer, error) {
 	var buffer bytes.Buffer
 
 	// Create zip writer
@@ -206,17 +250,17 @@ func filesToZipBuffer(files []fileStructure) bytes.Buffer {
 		// Create the file
 		f, err := zipWriter.Create(file.filename)
 		if err != nil {
-			log.Fatalln(err)
+			return buffer, err
 		}
 		// Write data into the file
 		if _, err := f.Write(file.content); err != nil {
-			log.Fatalln(err)
+			return buffer, err
 		}
 	}
 
 	// Close the zip writer
-	zipWriter.Close()
+	err := zipWriter.Close()
 
 	// Return the zip file
-	return buffer
+	return buffer, err
 }
