@@ -8,11 +8,12 @@ import (
 	"encoding/xml"
 	"flag"
 	"fmt"
+	"github.com/Organized92/route2bimmer/reader"
+	"github.com/Organized92/route2bimmer/structs"
 	"io/ioutil"
 	"log"
 	"math/rand"
 	"os"
-	"route2bimmer/structs"
 	"strconv"
 	"strings"
 )
@@ -53,14 +54,14 @@ func main() {
 	var gpxContents structs.GPX
 	if directio == true {
 		// Read from stdin
-		gpxContents, err = ReadGPXFromStdin()
+		gpxContents, err = reader.ReadGPXFromStdin()
 		if err != nil {
 			log.Println("Could not read fom STDIN!")
 			log.Fatalln(err)
 		}
 	} else {
 		// Read from file
-		gpxContents, err = ReadGPXFromFile(inputPtr)
+		gpxContents, err = reader.ReadGPXFromFile(inputPtr)
 		if err != nil {
 			log.Println("Could not read the GPX file!")
 			log.Fatalln(err)
@@ -71,13 +72,13 @@ func main() {
 	routeID := generateRandomID()
 
 	// Generate contents for XML file in folder "Nav" and "Navigation"
-	routeNav, err := MapGPXtoRouteNav(gpxContents, routeID)
+	routeNav, err := reader.MapGPXtoRouteNav(gpxContents, routeID)
 	if err != nil {
 		log.Println("BMW route XML could not be generated (Nav)!")
 		log.Fatalln(err)
 	}
 
-	routeNavigation, err := MapGPXtoRouteNavigation(gpxContents, routeID)
+	routeNavigation, err := reader.MapGPXtoRouteNavigation(gpxContents, routeID)
 	if err != nil {
 		log.Println("BMW route XML could not be generated (Nav)!")
 		log.Fatalln(err)

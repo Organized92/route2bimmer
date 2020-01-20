@@ -1,10 +1,10 @@
-package main
+package reader
 
 import (
 	"encoding/xml"
+	"github.com/Organized92/route2bimmer/structs"
 	"io/ioutil"
 	"os"
-	"route2bimmer/structs"
 )
 
 // ReadGPXFromStdin read the contents of the GPX file from stdin and returns a structure of type GPX in case of success
