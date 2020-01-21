@@ -1,7 +1,7 @@
-package main
+package reader
 
 import (
-	"route2bimmer/structs"
+	"github.com/Organized92/route2bimmer/structs"
 	"strconv"
 )
 

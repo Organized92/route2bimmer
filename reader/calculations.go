@@ -1,8 +1,8 @@
-package main
+package reader
 
 import (
+	"github.com/Organized92/route2bimmer/structs"
 	"math"
-	"route2bimmer/structs"
 	"time"
 )
 
