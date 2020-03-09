@@ -1,9 +1,10 @@
 package reader
 
 import (
-	"github.com/Organized92/route2bimmer/structs"
 	"math"
 	"time"
+
+	"github.com/Organized92/route2bimmer/structs"
 )
 
 // meterCoordinates can contain 3 dimensional coordinates in meters
@@ -21,6 +22,12 @@ func CalcTotalTrackDuration(track structs.Track) (int64, error) {
 
 	// We have to loop over the track segments
 	for _, segment := range track.Segments {
+
+		// The time information can be missing - in this case, we cannot calculate the
+		// duration for this track.
+		if segment.Points[0].Time == "" || segment.Points[len(segment.Points)-1].Time == "" {
+			return totalDuration, err
+		}
 
 		// We need the first and the last track point, the ones in between are irrelevant
 		timeFirstPoint, err := time.Parse(time.RFC3339, segment.Points[0].Time)
