@@ -8,14 +8,15 @@ import (
 	"encoding/xml"
 	"flag"
 	"fmt"
-	"github.com/Organized92/route2bimmer/reader"
-	"github.com/Organized92/route2bimmer/structs"
 	"io/ioutil"
 	"log"
 	"math/rand"
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/Organized92/route2bimmer/reader"
+	"github.com/Organized92/route2bimmer/structs"
 )
 
 type fileData struct {
@@ -146,8 +147,8 @@ func main() {
 
 	// File structure for zip archive
 	var filesZip = []fileData{
-		{"BMWData/Nav/" + gpxContents.Metadata.Name + ".tar.gz", bufNavGzip.Bytes(), 0700},
-		{"BMWData/Navigation/Routes/" + gpxContents.Metadata.Name + ".tar.gz", bufNavigationGzip.Bytes(), 0700},
+		{"BMWData/Nav/" + strconv.FormatInt(routeID, 10) + ".tar.gz", bufNavGzip.Bytes(), 0700},
+		{"BMWData/Navigation/Routes/" + strconv.FormatInt(routeID, 10) + ".tar.gz", bufNavigationGzip.Bytes(), 0700},
 	}
 
 	// Create the ZIP file containing the folder structure and the tar.gz-files
