@@ -217,7 +217,7 @@ func getNames(gpx gpx.GPX, routeID int64) ([]TourName, error) {
 	var err error
 
 	name.LanguageCode = conLanguageCodeEnglish
-	name.Text = gpx.Metadata.Name
+	name.Text = gpx.GetName()
 
 	names = append(names, name)
 	return names, err
