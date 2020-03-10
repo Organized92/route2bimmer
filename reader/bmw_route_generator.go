@@ -1,8 +1,9 @@
 package reader
 
 import (
-	"github.com/Organized92/route2bimmer/structs"
 	"strconv"
+
+	"github.com/Organized92/route2bimmer/structs"
 )
 
 const conImportanceAlways string = "always"
@@ -38,7 +39,9 @@ func MapGPXtoRouteNav(gpx structs.GPX, routeID int64) (structs.DeliveryPackage, 
 
 	// Basic data
 	deliveryPackage.VersionNo = conVersionZeroDotZero
-	deliveryPackage.CreationTime = gpx.Metadata.Time
+	if gpx.Metadata.Time != "" {
+		deliveryPackage.CreationTime = gpx.Metadata.Time
+	}
 	deliveryPackage.MapVersion = conVersionZeroDotZero
 	deliveryPackage.LanguageCodeDesc = conLanguageCodeDesc
 	deliveryPackage.CountryCodeDesc = conCountryCodeDesc
