@@ -5,9 +5,7 @@ import (
 	"archive/zip"
 	"bytes"
 	"compress/gzip"
-	"encoding/xml"
 	"flag"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"math/rand"
@@ -15,8 +13,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Organized92/route2bimmer/reader"
-	"github.com/Organized92/route2bimmer/structs"
+	"github.com/Organized92/route2bimmer/bmw"
+	"github.com/Organized92/route2bimmer/gpx"
 )
 
 type fileData struct {
@@ -30,7 +28,9 @@ func main() {
 	// Variable for error handling
 	var err error
 
-	// Parse command line arguments
+	// ***************************************************************************
+	// Command line arguments
+	// ***************************************************************************
 	inputPtr := flag.String("input", "", "path to input file")
 	outputPtr := flag.String("output", "", "path to output zip file")
 	flag.Parse()
@@ -42,27 +42,28 @@ func main() {
 		directio = true
 	} else {
 		if *inputPtr == "" && *outputPtr != "" {
-			fmt.Println("Please specify the input GPX file. Use -h for more information.")
-			return
+			log.Fatalln("Please specify the input GPX file. Use -h for more information.")
 		}
 		if *inputPtr != "" && *outputPtr == "" {
-			fmt.Println("Please specify the output ZIP file. Use -h for more information.")
-			return
+			log.Fatalln("Please specify the output ZIP file. Use -h for more information.")
 		}
 		directio = false
 	}
 
-	var gpxContents structs.GPX
+	// ***************************************************************************
+	// Read and interpret GPX file
+	// ***************************************************************************
+	var gpxFile gpx.GPX
 	if directio == true {
-		// Read from stdin
-		gpxContents, err = reader.ReadGPXFromStdin()
+		// Read from STDIN
+		gpxFile, err = gpx.FromStdin()
 		if err != nil {
 			log.Println("Could not read fom STDIN!")
 			log.Fatalln(err)
 		}
 	} else {
 		// Read from file
-		gpxContents, err = reader.ReadGPXFromFile(inputPtr)
+		gpxFile, err = gpx.FromFile(inputPtr)
 		if err != nil {
 			log.Println("Could not read the GPX file!")
 			log.Fatalln(err)
@@ -72,27 +73,32 @@ func main() {
 	// Generate random ID for this route
 	routeID := generateRandomID()
 
+	// ***************************************************************************
 	// Generate contents for XML file in folder "Nav" and "Navigation"
-	routeNav, err := reader.MapGPXtoRouteNav(gpxContents, routeID)
+	// ***************************************************************************
+	routeNav, err := bmw.NavFromGPX(gpxFile, routeID)
 	if err != nil {
 		log.Println("BMW route XML could not be generated (Nav)!")
 		log.Fatalln(err)
 	}
 
-	routeNavigation, err := reader.MapGPXtoRouteNavigation(gpxContents, routeID)
+	//routeNavigation, err := bmw.NavigationFromGPX(gpxFile, routeID)
+	routeNavigation, err := bmw.NavigationFromGPX(gpxFile, routeID)
 	if err != nil {
 		log.Println("BMW route XML could not be generated (Nav)!")
 		log.Fatalln(err)
 	}
 
+	// ***************************************************************************
 	// Marshal contents into XML text for both files
-	xmlNav, err := convertRouteToXML(routeNav)
+	// ***************************************************************************
+	xmlNav, err := routeNav.ToXML()
 	if err != nil {
 		log.Println("GPX contents could not be converted to BMW route format (Nav)!")
 		log.Fatalln(err)
 	}
 
-	xmlNavigation, err := convertRouteToXML(routeNavigation)
+	xmlNavigation, err := routeNavigation.ToXML()
 	if err != nil {
 		log.Println("GPX contents could not be converted to BMW route format (Navigation)!")
 		log.Fatalln(err)
@@ -101,7 +107,9 @@ func main() {
 	// We have to replace one XML tag so that it contains a newline
 	xmlNav = replaceAgoraCString(xmlNav)
 
+	// ***************************************************************************
 	// Read image file data
+	// ***************************************************************************
 	var thumbnail []byte
 	thumbnail, err = ioutil.ReadFile("routepicture.jpg")
 	if err != nil {
@@ -109,7 +117,9 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	// File structure for tar archive
+	// ***************************************************************************
+	// Create TAR archive
+	// ***************************************************************************
 	var filesNav = []fileData{
 		{strconv.FormatInt(routeID, 10) + ".xml", xmlNav, 0700},
 		{"routepicture_" + strconv.FormatInt(routeID, 10) + ".jpg", thumbnail, 0700},
@@ -119,7 +129,7 @@ func main() {
 		{"routepicture_" + strconv.FormatInt(routeID, 10) + ".jpg", thumbnail, 0700},
 	}
 
-	// Create tarballs
+	// Create TAR archives
 	bufNav, err := filesToTarBuffer(filesNav)
 	if err != nil {
 		log.Println("Could not create the tarball file (Nav)!")
@@ -132,7 +142,9 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	// compress the tarballs using GZIP
+	// ***************************************************************************
+	// Compress the TAR files using GZIP
+	// ***************************************************************************
 	bufNavGzip, err := compressGzip(bufNav)
 	if err != nil {
 		log.Println("Could not gzip the tarball file (Nav)!")
@@ -145,7 +157,10 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	// File structure for zip archive
+	// ***************************************************************************
+	// Create ZIP archive
+	// ***************************************************************************
+	// File structure
 	var filesZip = []fileData{
 		{"BMWData/Nav/" + strconv.FormatInt(routeID, 10) + ".tar.gz", bufNavGzip.Bytes(), 0700},
 		{"BMWData/Navigation/Routes/" + strconv.FormatInt(routeID, 10) + ".tar.gz", bufNavigationGzip.Bytes(), 0700},
@@ -158,6 +173,9 @@ func main() {
 		log.Fatalln(err)
 	}
 
+	// ***************************************************************************
+	// ZIP output
+	// ***************************************************************************
 	// Check if we have to write the zip file to stdout or into a file
 	if directio == true {
 		// write to stdout
@@ -175,12 +193,6 @@ func main() {
 // generateRandomID generates a random 7-digit number used as an ID for this route
 func generateRandomID() int64 {
 	return int64(rand.Intn(9999999-1000000) + 1000000)
-}
-
-// convertRouteToXML converts a xml structure to some real xml Text
-func convertRouteToXML(route structs.DeliveryPackage) ([]byte, error) {
-	buffer, err := xml.MarshalIndent(route, "", "  ")
-	return buffer, err
 }
 
 // replaceAgoraCString corrects the xml element "AgoraCString"

@@ -1,4 +1,4 @@
-package structs
+package bmw
 
 import "encoding/xml"
 
@@ -27,8 +27,8 @@ type GuidedTour struct {
 	XMLName       xml.Name           `xml:"GuidedTour"`
 	Access        string             `xml:"access,attr"`
 	Use           string             `xml:"use,attr"`
-	ID            int                `xml:"Id"`
-	TripType      int                `xml:"TripType"`
+	ID            string             `xml:"Id"`
+	TripType      string             `xml:"TripType"`
 	Countries     []Country          `xml:"Countries>Country"`
 	Names         []TourName         `xml:"Names>Name"`
 	Length        TourLength         `xml:"Length"`
@@ -108,7 +108,7 @@ type EntryPoint struct {
 // Route contains information about the route
 type Route struct {
 	XMLName      xml.Name        `xml:"Route"`
-	RouteID      int             `xml:"RouteID"`
+	RouteID      string          `xml:"RouteID"`
 	WayPoint     []RouteWayPoint `xml:"WayPoint"`
 	Length       TourLength      `xml:"Length"`
 	Duration     TourDuration    `xml:"Duration"`

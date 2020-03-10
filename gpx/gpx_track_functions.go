@@ -1,10 +1,8 @@
-package reader
+package gpx
 
 import (
 	"math"
 	"time"
-
-	"github.com/Organized92/route2bimmer/structs"
 )
 
 // meterCoordinates can contain 3 dimensional coordinates in meters
@@ -14,9 +12,9 @@ type meterCoordinates struct {
 	z float64
 }
 
-// CalcTotalTrackDuration calculates the amount of time you will need for this route, based on the time data provided in the track data of the GPX file
+// CalcTotalDuration calculates the amount of time you will need for this route, based on the time data provided in the track data of the GPX file
 // this will return the duration in seconds
-func CalcTotalTrackDuration(track structs.Track) (int64, error) {
+func (track Track) CalcTotalDuration() (int64, error) {
 	var totalDuration int64
 	var err error
 
@@ -49,8 +47,8 @@ func CalcTotalTrackDuration(track structs.Track) (int64, error) {
 	return totalDuration, err
 }
 
-// CalcTotalTrackDistance calculates the distance of a GPX track in meters, also considering the elevation provided in the GPX file.
-func CalcTotalTrackDistance(track structs.Track) float64 {
+// CalcTotalDistance calculates the distance of a GPX track in meters, also considering the elevation provided in the GPX file.
+func (track Track) CalcTotalDistance() float64 {
 	var totalDistance float64
 	var distance float64
 

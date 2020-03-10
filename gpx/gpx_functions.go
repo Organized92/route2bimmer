@@ -1,16 +1,15 @@
-package reader
+package gpx
 
 import (
 	"encoding/xml"
-	"github.com/Organized92/route2bimmer/structs"
 	"io/ioutil"
 	"os"
 )
 
-// ReadGPXFromStdin read the contents of the GPX file from stdin and returns a structure of type GPX in case of success
-func ReadGPXFromStdin() (structs.GPX, error) {
+// FromStdin reads all data from Stdin and converts it into a GPX file structure
+func FromStdin() (GPX, error) {
 	// Declare return value
-	var gpxContents structs.GPX
+	var gpxContents GPX
 
 	// Read data from stdin
 	data, err := ioutil.ReadAll(os.Stdin)
@@ -25,10 +24,10 @@ func ReadGPXFromStdin() (structs.GPX, error) {
 	return gpxContents, err
 }
 
-// ReadGPXFromFile reads the contents of the supplied filepath and returns a structure of type GPX in case of success
-func ReadGPXFromFile(inputPath *string) (structs.GPX, error) {
+// FromFile reads the contents of the supplied filepath and returns a structure of type GPX in case of success
+func FromFile(inputPath *string) (GPX, error) {
 	// Declare return value
-	var gpxContents structs.GPX
+	var gpxContents GPX
 	var err error
 
 	// Open the GPX file
@@ -49,4 +48,24 @@ func ReadGPXFromFile(inputPath *string) (structs.GPX, error) {
 
 	// Return the contents of the GPX file
 	return gpxContents, err
+}
+
+// GetName returns the name of the route, first trying to read it from the GPX metadata,
+// and if not present here, from the first route. If both are empty, it will return
+// "Unnamed Route"
+func (gpx GPX) GetName() string {
+	if gpx.Metadata.Name != "" {
+		return gpx.Metadata.Name
+	}
+
+	// No route name present in metadata, try to read it from the first route
+	// in the file.
+	if len(gpx.Routes) >= 1 {
+		if gpx.Routes[0].Name != "" {
+			return gpx.Routes[0].Name
+		}
+	}
+
+	// Fallback
+	return "Unnamed Route"
 }
