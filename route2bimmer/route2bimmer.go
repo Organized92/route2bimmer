@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"log"
 	"math/rand"
+	"time"
 	"os"
 	"strconv"
 	"strings"
@@ -192,6 +193,7 @@ func main() {
 
 // generateRandomID generates a random 7-digit number used as an ID for this route
 func generateRandomID() int64 {
+	rand.Seed(time.Now().UnixNano())
 	return int64(rand.Intn(9999999-1000000) + 1000000)
 }
 
